@@ -46,7 +46,7 @@ def get_documents(page=0, size=5):
     params = {
         "page": page,
         "size": size,
-        "sort": "documentReference,asc",
+        "sort": "updateDate,desc",
     }
 
     print()
