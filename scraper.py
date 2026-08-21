@@ -32,12 +32,12 @@ HEADERS = {
 }
 
 
-def get_documents(page=0, size=100):
+def get_documents(page=0, size=5):
 
     params = {
         "page": page,
         "size": size,
-        "sort": "updateDate,desc",
+        "sort": "documentReference,asc",
     }
 
     response = requests.get(
@@ -47,6 +47,12 @@ def get_documents(page=0, size=100):
         json={"reset": False},
         timeout=60,
     )
+
+    print("API status:", response.status_code)
+
+    if response.status_code != 200:
+        print("API response:")
+        print(response.text)
 
     response.raise_for_status()
 
