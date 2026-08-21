@@ -316,7 +316,7 @@ def main():
     # This gives us plenty of room to catch new
     # documents even if the Action doesn't run for
     # a few hours.
-    for page in range(5):
+    for page in range(1):
 
         print(
             f"Fetching page {page}..."
