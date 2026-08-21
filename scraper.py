@@ -324,7 +324,7 @@ def main():
 
         data = get_documents(
             page=page,
-            size=100,
+            size=5,
         )
 
         page_documents = data.get(
