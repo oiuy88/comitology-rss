@@ -14,6 +14,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
@@ -28,6 +29,11 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+
+      - name: Sync with main
+        run: |
+          git fetch origin main
+          git reset --hard origin/main
 
       - name: Generate RSS
         run: |
@@ -46,7 +52,4 @@ jobs:
           fi
 
           git commit -m "Update Comitology RSS feed"
-
-          git pull --rebase origin main
-
           git push origin main
