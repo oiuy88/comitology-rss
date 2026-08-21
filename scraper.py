@@ -1,4 +1,4 @@
-fetimport html
+import html
 import xml.etree.ElementTree as ET
 
 from datetime import datetime, timezone
@@ -7,6 +7,10 @@ from urllib.parse import quote
 
 import requests
 
+
+# ============================================================
+# CONFIGURATION
+# ============================================================
 
 API_URL = (
     "https://ec.europa.eu/transparency/"
@@ -17,8 +21,9 @@ OUTPUT_FILE = "comitology.xml"
 
 REGISTER_URL = (
     "https://ec.europa.eu/transparency/"
-    "comitology-register/screen/documents"
+    "comitology-register/screen/documents?lang=en"
 )
+
 
 HEADERS = {
     "Accept": "application/json, text/plain, */*",
@@ -32,6 +37,10 @@ HEADERS = {
 }
 
 
+# ============================================================
+# GET DOCUMENTS FROM COMMISSION API
+# ============================================================
+
 def get_documents(page=0, size=5):
 
     params = {
@@ -40,56 +49,136 @@ def get_documents(page=0, size=5):
         "sort": "documentReference,asc",
     }
 
-    response = requests.post(
-        API_URL,
-        params=params,
-        headers=HEADERS,
-        json={"reset": False},
-        timeout=60,
+    print()
+    print("Requesting Comitology API...")
+    print("Method: POST")
+    print(f"Page: {page}")
+    print(f"Size: {size}")
+    print("Sort: documentReference,asc")
+
+    try:
+
+        response = requests.post(
+            API_URL,
+            params=params,
+            headers=HEADERS,
+            json={
+                "reset": False
+            },
+            timeout=60,
+        )
+
+    except requests.RequestException as error:
+
+        print()
+        print("ERROR connecting to Commission API:")
+        print(error)
+
+        raise
+
+    print(
+        f"API status: {response.status_code}"
     )
 
-    print("API status:", response.status_code)
-
     if response.status_code != 200:
-        print("API response:")
+
+        print()
+        print("Commission API returned an error:")
         print(response.text)
 
-    response.raise_for_status()
+        response.raise_for_status()
 
-    return response.json()
+    try:
 
+        data = response.json()
+
+    except ValueError:
+
+        print()
+        print("ERROR: API did not return valid JSON.")
+        print(response.text)
+
+        raise
+
+    return data
+
+
+# ============================================================
+# CREATE DOCUMENT URL
+# ============================================================
 
 def document_url(document):
 
-    reference = document["documentReference"]
-    version = document["version"]
+    reference = str(
+        document.get(
+            "documentReference",
+            ""
+        )
+    )
+
+    version = str(
+        document.get(
+            "version",
+            ""
+        )
+    )
 
     return (
         "https://ec.europa.eu/transparency/"
         "comitology-register/screen/documents/"
-        f"{quote(str(reference))}/{version}"
+        f"{quote(reference)}/{quote(version)}"
     )
 
+
+# ============================================================
+# PARSE API DATE
+# ============================================================
 
 def parse_date(value):
 
     if not value:
         return None
 
-    return datetime.fromisoformat(
-        value.replace("Z", "+00:00")
-    )
+    try:
 
+        return datetime.fromisoformat(
+            value.replace(
+                "Z",
+                "+00:00"
+            )
+        )
+
+    except ValueError:
+
+        return None
+
+
+# ============================================================
+# CREATE RSS DESCRIPTION
+# ============================================================
 
 def create_description(document):
 
     parts = []
 
+    reference = document.get(
+        "documentReference",
+        ""
+    )
+
+    version = document.get(
+        "version",
+        ""
+    )
+
     parts.append(
         f"Document reference: "
-        f"{document['documentReference']}/"
-        f"{document['version']}"
+        f"{reference}/{version}"
     )
+
+    # --------------------------------------------------------
+    # Document type
+    # --------------------------------------------------------
 
     document_type = document.get(
         "documentType"
@@ -107,114 +196,204 @@ def create_description(document):
             ""
         )
 
-        # Convert API label to something readable.
-        label = label.replace(
-            "label.",
-            ""
-        ).replace(
-            "_",
-            " "
+        label = (
+            label
+            .replace(
+                "label.",
+                ""
+            )
+            .replace(
+                "_",
+                " "
+            )
+            .title()
         )
 
-        parts.append(
-            f"Document type: "
-            f"{letter} — {label}"
-        )
+        if letter:
 
-    if document.get("committeeTitle"):
+            parts.append(
+                f"Document type: "
+                f"{letter} — {label}"
+            )
+
+        elif label:
+
+            parts.append(
+                f"Document type: {label}"
+            )
+
+    # --------------------------------------------------------
+    # Committee
+    # --------------------------------------------------------
+
+    committee_title = document.get(
+        "committeeTitle"
+    )
+
+    if committee_title:
 
         parts.append(
             f"Committee: "
-            f"{document['committeeTitle']}"
+            f"{committee_title}"
         )
 
-    if document.get("committeeCode"):
+    committee_code = document.get(
+        "committeeCode"
+    )
+
+    if committee_code:
 
         parts.append(
             f"Committee code: "
-            f"{document['committeeCode']}"
+            f"{committee_code}"
         )
 
-    if document.get("meetingCode"):
+    # --------------------------------------------------------
+    # Meeting
+    # --------------------------------------------------------
+
+    meeting_code = document.get(
+        "meetingCode"
+    )
+
+    if meeting_code:
 
         parts.append(
             f"Meeting: "
-            f"{document['meetingCode']}"
+            f"{meeting_code}"
         )
 
-    if document.get("meetingStartDate"):
+    meeting_start = document.get(
+        "meetingStartDate"
+    )
+
+    if meeting_start:
 
         parts.append(
             f"Meeting start: "
-            f"{document['meetingStartDate']}"
+            f"{meeting_start}"
         )
 
-    if document.get("meetingEndDate"):
+    meeting_end = document.get(
+        "meetingEndDate"
+    )
+
+    if meeting_end:
 
         parts.append(
             f"Meeting end: "
-            f"{document['meetingEndDate']}"
+            f"{meeting_end}"
+        )
+
+    # --------------------------------------------------------
+    # Dates
+    # --------------------------------------------------------
+
+    creation_date = document.get(
+        "creationDate"
+    )
+
+    if creation_date:
+
+        parts.append(
+            f"Created: "
+            f"{creation_date}"
+        )
+
+    update_date = document.get(
+        "updateDate"
+    )
+
+    if update_date:
+
+        parts.append(
+            f"Updated: "
+            f"{update_date}"
         )
 
     return "\n".join(parts)
 
+
+# ============================================================
+# CREATE RSS
+# ============================================================
 
 def create_rss(documents):
 
     rss = ET.Element(
         "rss",
         {
-            "version": "2.0",
-        },
+            "version": "2.0"
+        }
     )
 
     channel = ET.SubElement(
         rss,
-        "channel",
+        "channel"
+    )
+
+    # --------------------------------------------------------
+    # Channel information
+    # --------------------------------------------------------
+
+    ET.SubElement(
+        channel,
+        "title"
+    ).text = (
+        "European Commission "
+        "Comitology Register"
     )
 
     ET.SubElement(
         channel,
-        "title",
+        "link"
+    ).text = REGISTER_URL
+
+    ET.SubElement(
+        channel,
+        "description"
     ).text = (
+        "Latest documents from the "
         "European Commission Comitology Register"
     )
 
     ET.SubElement(
         channel,
-        "link",
-    ).text = REGISTER_URL
-
-    ET.SubElement(
-        channel,
-        "description",
-    ).text = (
-        "Latest documents from the European "
-        "Commission Comitology Register"
-    )
-
-    ET.SubElement(
-        channel,
-        "language",
+        "language"
     ).text = "en"
 
     ET.SubElement(
         channel,
-        "lastBuildDate",
+        "lastBuildDate"
     ).text = format_datetime(
-        datetime.now(timezone.utc)
+        datetime.now(
+            timezone.utc
+        )
     )
+
+    # --------------------------------------------------------
+    # Documents
+    # --------------------------------------------------------
 
     for document in documents:
 
         item = ET.SubElement(
             channel,
-            "item",
+            "item"
         )
 
-        reference = (
-            f"{document['documentReference']}/"
-            f"{document['version']}"
+        reference = str(
+            document.get(
+                "documentReference",
+                ""
+            )
+        )
+
+        version = str(
+            document.get(
+                "version",
+                ""
+            )
         )
 
         title = document.get(
@@ -222,15 +401,22 @@ def create_rss(documents):
             "Untitled document"
         )
 
-        # Make the RSS title particularly useful.
+        # ----------------------------------------------------
+        # RSS title
+        # ----------------------------------------------------
+
         rss_title = (
-            f"{reference} — {title}"
+            f"{reference}/{version} — {title}"
         )
 
         ET.SubElement(
             item,
-            "title",
+            "title"
         ).text = rss_title
+
+        # ----------------------------------------------------
+        # Document URL
+        # ----------------------------------------------------
 
         url = document_url(
             document
@@ -238,17 +424,24 @@ def create_rss(documents):
 
         ET.SubElement(
             item,
-            "link",
+            "link"
         ).text = url
 
-        # Reference + version makes a useful stable GUID.
+        # ----------------------------------------------------
+        # GUID
+        # ----------------------------------------------------
+
         ET.SubElement(
             item,
             "guid",
             {
                 "isPermaLink": "true"
-            },
+            }
         ).text = url
+
+        # ----------------------------------------------------
+        # Publication date
+        # ----------------------------------------------------
 
         date = parse_date(
             document.get(
@@ -260,10 +453,14 @@ def create_rss(documents):
 
             ET.SubElement(
                 item,
-                "pubDate",
+                "pubDate"
             ).text = format_datetime(
                 date
             )
+
+        # ----------------------------------------------------
+        # Description
+        # ----------------------------------------------------
 
         description = html.escape(
             create_description(
@@ -273,8 +470,12 @@ def create_rss(documents):
 
         ET.SubElement(
             item,
-            "description",
+            "description"
         ).text = description
+
+        # ----------------------------------------------------
+        # Category
+        # ----------------------------------------------------
 
         document_type = document.get(
             "documentType"
@@ -285,19 +486,26 @@ def create_rss(documents):
             label = document_type.get(
                 "label",
                 ""
-            ).replace(
-                "label.",
-                ""
-            ).replace(
-                "_",
-                " "
+            )
+
+            label = (
+                label
+                .replace(
+                    "label.",
+                    ""
+                )
+                .replace(
+                    "_",
+                    " "
+                )
+                .title()
             )
 
             if label:
 
                 ET.SubElement(
                     item,
-                    "category",
+                    "category"
                 ).text = label
 
     return ET.ElementTree(
@@ -305,26 +513,37 @@ def create_rss(documents):
     )
 
 
+# ============================================================
+# MAIN
+# ============================================================
+
 def main():
+
+    print("=" * 60)
+    print("COMITOLOGY RSS GENERATOR")
+    print("=" * 60)
 
     documents = []
 
-    # Fetch several pages of the newest documents.
+    # --------------------------------------------------------
+    # IMPORTANT:
     #
-    # 5 pages × 100 = up to 500 documents.
+    # We are deliberately starting with ONE page of FIVE
+    # documents while testing the API.
     #
-    # This gives us plenty of room to catch new
-    # documents even if the Action doesn't run for
-    # a few hours.
+    # Once this works, we will increase this.
+    # --------------------------------------------------------
+
     for page in range(1):
 
+        print()
         print(
             f"Fetching page {page}..."
         )
 
         data = get_documents(
             page=page,
-            size=5,
+            size=5
         )
 
         page_documents = data.get(
@@ -333,7 +552,7 @@ def main():
         )
 
         print(
-            f"  Found "
+            f"Found "
             f"{len(page_documents)} documents"
         )
 
@@ -341,36 +560,79 @@ def main():
             page_documents
         )
 
-        if data.get("last"):
-            break
+        # ----------------------------------------------------
+        # Show what we received
+        # ----------------------------------------------------
 
-    # Deduplicate by document reference + version.
-    unique = {}
+        for document in page_documents:
+
+            reference = document.get(
+                "documentReference",
+                ""
+            )
+
+            version = document.get(
+                "version",
+                ""
+            )
+
+            title = document.get(
+                "title",
+                ""
+            )
+
+            print()
+            print(
+                f"  {reference}/{version}"
+            )
+
+            print(
+                f"  {title}"
+            )
+
+    # --------------------------------------------------------
+    # Deduplicate
+    # --------------------------------------------------------
+
+    unique_documents = {}
 
     for document in documents:
 
         key = (
-            document["documentReference"],
-            document["version"],
+            document.get(
+                "documentReference"
+            ),
+            document.get(
+                "version"
+            )
         )
 
-        unique[key] = document
+        unique_documents[key] = document
 
     documents = list(
-        unique.values()
+        unique_documents.values()
     )
 
+    print()
     print(
-        f"Total documents: "
+        f"Total unique documents: "
         f"{len(documents)}"
     )
+
+    # --------------------------------------------------------
+    # Make sure we actually received data
+    # --------------------------------------------------------
 
     if not documents:
 
         raise RuntimeError(
-            "The Comitology API returned "
-            "no documents."
+            "The Commission API returned "
+            "zero documents."
         )
+
+    # --------------------------------------------------------
+    # Generate RSS
+    # --------------------------------------------------------
 
     rss = create_rss(
         documents
@@ -384,14 +646,24 @@ def main():
     rss.write(
         OUTPUT_FILE,
         encoding="utf-8",
-        xml_declaration=True,
+        xml_declaration=True
     )
 
+    print()
     print(
-        f"RSS written to "
+        f"RSS successfully written to "
         f"{OUTPUT_FILE}"
     )
 
+    print()
+    print("=" * 60)
+    print("SUCCESS")
+    print("=" * 60)
+
+
+# ============================================================
+# RUN
+# ============================================================
 
 if __name__ == "__main__":
     main()
