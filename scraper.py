@@ -41,7 +41,7 @@ HEADERS = {
 # GET DOCUMENTS FROM COMMISSION API
 # ============================================================
 
-def get_documents(page=0, size=5):
+def get_documents(page=0, size=100):
 
     params = {
         "page": page,
@@ -543,7 +543,7 @@ def main():
 
         data = get_documents(
             page=page,
-            size=5
+            size=100
         )
 
         page_documents = data.get(
