@@ -16,6 +16,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v7
@@ -40,7 +42,11 @@ jobs:
 
           if git diff --cached --quiet; then
             echo "No changes."
-          else
-            git commit -m "Update Comitology RSS feed"
-            git push
+            exit 0
           fi
+
+          git commit -m "Update Comitology RSS feed"
+
+          git pull --rebase origin main
+
+          git push origin main
