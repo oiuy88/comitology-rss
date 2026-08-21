@@ -1,4 +1,4 @@
-import html
+fetimport html
 import xml.etree.ElementTree as ET
 
 from datetime import datetime, timezone
@@ -40,7 +40,7 @@ def get_documents(page=0, size=5):
         "sort": "documentReference,asc",
     }
 
-    response = requests.get(
+    response = requests.post(
         API_URL,
         params=params,
         headers=HEADERS,
