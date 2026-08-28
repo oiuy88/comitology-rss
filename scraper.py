@@ -54,7 +54,8 @@ def get_documents(page=0, size=100):
     print("Method: POST")
     print(f"Page: {page}")
     print(f"Size: {size}")
-    print("Sort: documentReference,asc")
+print("Sort: updateDate,desc")
+
 
     try:
 
