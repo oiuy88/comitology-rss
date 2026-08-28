@@ -1,15 +1,3 @@
-- name: Test Comitology API GET
-  run: |
-    curl -i \
-      'https://ec.europa.eu/transparency/comitology-register/core/api/front/documents/search?page=0&size=10&sort=updateDate%2Cdesc' \
-      -H 'Accept: application/json, text/plain, */*' \
-      -H 'Language: en' \
-      -H 'User-Agent: Mozilla/5.0'
-
-- name: Run scraper
-  run: python scraper.py
-
-
 name: Update Comitology RSS
 
 on:
@@ -26,7 +14,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
@@ -46,6 +33,14 @@ jobs:
         run: |
           git fetch origin main
           git reset --hard origin/main
+
+      - name: Test Comitology API GET
+        run: |
+          curl -i \
+            'https://ec.europa.eu/transparency/comitology-register/core/api/front/documents/search?page=0&size=10&sort=updateDate%2Cdesc' \
+            -H 'Accept: application/json, text/plain, */*' \
+            -H 'Language: en' \
+            -H 'User-Agent: Mozilla/5.0'
 
       - name: Generate RSS
         run: |
