@@ -1,4 +1,4 @@
-import html
+import time
 import xml.etree.ElementTree as ET
 
 from datetime import datetime, timezone
@@ -24,7 +24,6 @@ REGISTER_URL = (
     "comitology-register/screen/documents?lang=en"
 )
 
-
 HEADERS = {
     "Accept": "application/json, text/plain, */*",
     "Content-Type": "application/json",
@@ -35,6 +34,8 @@ HEADERS = {
         "(compatible; Comitology-RSS/1.0)"
     ),
 }
+
+MAX_ATTEMPTS = 3
 
 
 # ============================================================
@@ -56,38 +57,186 @@ def get_documents(page=0, size=100):
     print(f"Size: {size}")
     print("Sort: updateDate,desc")
 
-    try:
-        response = requests.get(
-            API_URL,
-            params=params,
-            headers=HEADERS,
-            timeout=60,
+    for attempt in range(1, MAX_ATTEMPTS + 1):
+
+        print()
+        print(
+            f"Request attempt "
+            f"{attempt}/{MAX_ATTEMPTS}"
         )
 
-    except requests.RequestException as error:
-        print()
-        print("ERROR connecting to Commission API:")
-        print(error)
-        raise
+        try:
 
-    print(f"API status: {response.status_code}")
+            response = requests.post(
+                API_URL,
+                params=params,
+                headers=HEADERS,
+                json={
+                    "reset": False
+                },
+                timeout=60,
+            )
 
-    if response.status_code != 200:
-        print()
-        print("Commission API returned an error:")
-        print(response.text)
-        response.raise_for_status()
+        except requests.RequestException as error:
 
-    try:
-        data = response.json()
+            print()
+            print(
+                "ERROR connecting to "
+                "Commission API:"
+            )
+            print(error)
 
-    except ValueError:
-        print()
-        print("ERROR: API did not return valid JSON.")
-        print(response.text)
-        raise
+            if attempt == MAX_ATTEMPTS:
+                raise
 
-    return data
+            wait_seconds = 10 * attempt
+
+            print(
+                f"Retrying in "
+                f"{wait_seconds} seconds..."
+            )
+
+            time.sleep(
+                wait_seconds
+            )
+
+            continue
+
+        print(
+            f"API status: "
+            f"{response.status_code}"
+        )
+
+        content_type = response.headers.get(
+            "Content-Type",
+            ""
+        ).lower()
+
+        # ----------------------------------------------------
+        # Successful JSON response
+        # ----------------------------------------------------
+
+        if (
+            response.status_code == 200
+            and "application/json" in content_type
+        ):
+
+            try:
+
+                return response.json()
+
+            except ValueError as error:
+
+                print()
+                print(
+                    "ERROR: Commission API "
+                    "returned invalid JSON."
+                )
+
+                print(
+                    response.text[:5000]
+                )
+
+                if attempt == MAX_ATTEMPTS:
+                    raise RuntimeError(
+                        "Commission API returned "
+                        "invalid JSON."
+                    ) from error
+
+        # ----------------------------------------------------
+        # Server temporarily unavailable
+        # ----------------------------------------------------
+
+        if (
+            response.status_code == 200
+            and "text/html" in content_type
+        ):
+
+            print()
+            print(
+                "Commission API returned "
+                "an HTML page instead of JSON."
+            )
+
+            print(
+                "The Commission service may "
+                "be temporarily unavailable."
+            )
+
+            if attempt == MAX_ATTEMPTS:
+
+                print()
+                print(
+                    "Response from Commission:"
+                )
+
+                print(
+                    response.text[:5000]
+                )
+
+                raise RuntimeError(
+                    "Commission API is temporarily "
+                    "unavailable or returned an "
+                    "HTML error page."
+                )
+
+        # ----------------------------------------------------
+        # HTTP error
+        # ----------------------------------------------------
+
+        else:
+
+            print()
+            print(
+                "Commission API returned "
+                "an unexpected response."
+            )
+
+            print(
+                f"Content-Type: "
+                f"{content_type}"
+            )
+
+            print()
+            print(
+                "Response:"
+            )
+
+            print(
+                response.text[:5000]
+            )
+
+            if attempt == MAX_ATTEMPTS:
+
+                response.raise_for_status()
+
+                raise RuntimeError(
+                    "Commission API returned "
+                    "an unexpected response."
+                )
+
+        # ----------------------------------------------------
+        # Retry
+        # ----------------------------------------------------
+
+        if attempt < MAX_ATTEMPTS:
+
+            wait_seconds = 10 * attempt
+
+            print()
+            print(
+                f"Retrying in "
+                f"{wait_seconds} seconds..."
+            )
+
+            time.sleep(
+                wait_seconds
+            )
+
+    raise RuntimeError(
+        "Unable to retrieve documents "
+        "from the Commission API."
+    )
 
 
 # ============================================================
@@ -449,16 +598,12 @@ def create_rss(documents):
         # Description
         # ----------------------------------------------------
 
-        description = html.escape(
-            create_description(
-                document
-            )
-        )
-
         ET.SubElement(
             item,
             "description"
-        ).text = description
+        ).text = create_description(
+            document
+        )
 
         # ----------------------------------------------------
         # Category
@@ -513,12 +658,10 @@ def main():
     documents = []
 
     # --------------------------------------------------------
-    # IMPORTANT:
+    # Currently fetching one page for testing.
     #
-    # We are deliberately starting with ONE page of FIVE
-    # documents while testing the API.
-    #
-    # Once this works, we will increase this.
+    # Once confirmed working, increase the number of pages
+    # or implement pagination as required.
     # --------------------------------------------------------
 
     for page in range(1):
