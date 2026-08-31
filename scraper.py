@@ -57,7 +57,7 @@ def get_documents(page=0, size=100):
 print("Sort: updateDate,desc")
 
 
-    try:
+try:
 
         response = requests.post(
             API_URL,
