@@ -54,11 +54,9 @@ def get_documents(page=0, size=100):
     print("Method: POST")
     print(f"Page: {page}")
     print(f"Size: {size}")
-print("Sort: updateDate,desc")
+    print("Sort: updateDate,desc")
 
-
-try:
-
+    try:
         response = requests.post(
             API_URL,
             params=params,
@@ -70,35 +68,26 @@ try:
         )
 
     except requests.RequestException as error:
-
         print()
         print("ERROR connecting to Commission API:")
         print(error)
-
         raise
 
-    print(
-        f"API status: {response.status_code}"
-    )
+    print(f"API status: {response.status_code}")
 
     if response.status_code != 200:
-
         print()
         print("Commission API returned an error:")
         print(response.text)
-
         response.raise_for_status()
 
     try:
-
         data = response.json()
 
     except ValueError:
-
         print()
         print("ERROR: API did not return valid JSON.")
         print(response.text)
-
         raise
 
     return data
