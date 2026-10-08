@@ -5,7 +5,23 @@
     <link>https://ec.europa.eu/transparency/comitology-register/screen/documents?lang=en</link>
     <description>Latest documents from the European Commission Comitology Register</description>
     <language>en</language>
-    <lastBuildDate>Thu, 08 Oct 2026 02:03:47 +0000</lastBuildDate>
+    <lastBuildDate>Thu, 08 Oct 2026 09:08:41 +0000</lastBuildDate>
+    <item>
+      <title>118409/1 — Ex post notification note non-substantial amendment IPARD III Turkiye</title>
+      <link>https://ec.europa.eu/transparency/comitology-register/screen/documents/118409/1</link>
+      <guid isPermaLink="true">https://ec.europa.eu/transparency/comitology-register/screen/documents/118409/1</guid>
+      <pubDate>Thu, 08 Oct 2026 09:05:40 +0000</pubDate>
+      <description>Document reference: 118409/1
+Document type: O — Other Documents
+Committee: Instrument for Pre-Accession Assistance (IPA III)
+Committee code: C94400
+Meeting: CMTD(2026)1699
+Meeting start: 2026-10-07T22:00:00Z
+Meeting end: 2026-10-07T22:00:00Z
+Created: 2026-10-08T07:32:19.261571Z
+Updated: 2026-10-08T09:05:40.841190Z</description>
+      <category>Other Documents</category>
+    </item>
     <item>
       <title>114244/1 — Agenda for meeting of 24 March 2026 - EDIP Programme Committee</title>
       <link>https://ec.europa.eu/transparency/comitology-register/screen/documents/114244/1</link>
@@ -1606,22 +1622,6 @@ Meeting end: 2026-09-29T22:00:00Z
 Created: 2026-09-22T13:14:00.219868Z
 Updated: 2026-10-02T16:15:58.371628Z</description>
       <category>Draft Implementing Act</category>
-    </item>
-    <item>
-      <title>118316/1 — REGCOM Draft Agenda 157th NDICI-GE 21 October 2026</title>
-      <link>https://ec.europa.eu/transparency/comitology-register/screen/documents/118316/1</link>
-      <guid isPermaLink="true">https://ec.europa.eu/transparency/comitology-register/screen/documents/118316/1</guid>
-      <pubDate>Fri, 02 Oct 2026 16:10:12 +0000</pubDate>
-      <description>Document reference: 118316/1
-Document type: A — Agenda
-Committee: Neighbourhood, Development and International Cooperation Instrument Committee
-Committee code: C84400
-Meeting: CMTD(2026)1656
-Meeting start: 2026-10-20T22:00:00Z
-Meeting end: 2026-10-20T22:00:00Z
-Created: 2026-10-02T13:57:57.881602Z
-Updated: 2026-10-02T16:10:12.376706Z</description>
-      <category>Agenda</category>
     </item>
   </channel>
 </rss>
